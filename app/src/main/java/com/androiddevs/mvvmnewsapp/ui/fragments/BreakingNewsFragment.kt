@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.observe
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.RecyclerView
 import com.androiddevs.mvvmnewsapp.R
@@ -56,6 +57,8 @@ class BreakingNewsFragment: Fragment(R.layout.fragment_breaking_news), OnItemCli
         rvBreakingNews.addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
     }
     override fun onItemClickListener(pos: Int) {
-        Toast.makeText(requireContext(), adapter.differ.currentList[pos].title, Toast.LENGTH_SHORT).show()
+        val bundle = Bundle()
+        bundle.putSerializable("article", adapter.differ.currentList[pos])
+        findNavController().navigate(R.id.action_breakingNewsFragment_to_articleFragment, bundle)
     }
 }
