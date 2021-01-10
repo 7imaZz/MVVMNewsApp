@@ -13,10 +13,14 @@ import retrofit2.Response
 class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
 
     val breakingNewsLiveData: MutableLiveData<Resource<NewsResponse>> = MutableLiveData()
-    private var breakingNewsPage = 1
+
+    var breakingNewsPage = 1
+    private var breakingNewsResponse: NewsResponse? = null
 
     val searchLiveData: MutableLiveData<Resource<NewsResponse>> = MutableLiveData()
-    private var searchPage = 1
+    var searchPage = 1
+    private var searchingNewsResponse: NewsResponse? = null
+
 
     init {
         getBreakingNews("eg")
@@ -31,7 +35,15 @@ class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
     private fun handleBreakingNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse>{
         if (response.isSuccessful){
             response.body()?.let { resultResponse->
-                return Resource.Success(resultResponse)
+                breakingNewsPage++
+                if (breakingNewsResponse == null){
+                    breakingNewsResponse = resultResponse
+                }else{
+                    val oldArticles: MutableList<Article> = breakingNewsResponse?.articles as MutableList<Article>
+                    val newArticles = resultResponse.articles
+                    oldArticles.addAll(newArticles)
+                }
+                return Resource.Success(breakingNewsResponse ?: resultResponse)
             }
         }
         return Resource.Error(response.body(), response.message())
@@ -46,7 +58,15 @@ class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
     private fun handleSearchNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse>{
         if (response.isSuccessful){
             response.body()?.let { resultResponse->
-                return Resource.Success(resultResponse)
+                searchPage++
+                if (searchingNewsResponse == null){
+                    searchingNewsResponse = resultResponse
+                }else{
+                    val oldArticles: MutableList<Article> = searchingNewsResponse?.articles as MutableList<Article>
+                    val newArticles = resultResponse.articles
+                    oldArticles.addAll(newArticles)
+                }
+                return Resource.Success(searchingNewsResponse ?: resultResponse)
             }
         }
         return Resource.Error(response.body(), response.message())
