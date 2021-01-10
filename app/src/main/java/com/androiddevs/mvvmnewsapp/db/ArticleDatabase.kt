@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.androiddevs.mvvmnewsapp.pojo.Article
 
-@Database(entities = [Article::class], version = 1)
+@Database(entities = [Article::class], version = 2)
 @TypeConverters(Converters::class)
 abstract class ArticleDatabase: RoomDatabase(){
 
@@ -27,7 +27,7 @@ abstract class ArticleDatabase: RoomDatabase(){
                     context.applicationContext,
                     ArticleDatabase::class.java,
                     "article_db"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 // return instance
                 instance
