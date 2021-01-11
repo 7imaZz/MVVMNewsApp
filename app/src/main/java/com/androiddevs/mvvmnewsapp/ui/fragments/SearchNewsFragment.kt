@@ -4,7 +4,7 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.widget.AbsListView
-import androidx.core.widget.addTextChangedListener
+import android.widget.SearchView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -19,10 +19,6 @@ import com.androiddevs.mvvmnewsapp.utils.OnItemClick
 import com.androiddevs.mvvmnewsapp.utils.Resource
 import kotlinx.android.synthetic.main.fragment_breaking_news.paginationProgressBar
 import kotlinx.android.synthetic.main.fragment_search_news.*
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class SearchNewsFragment: Fragment(R.layout.fragment_search_news), OnItemClick{
 
@@ -65,26 +61,30 @@ class SearchNewsFragment: Fragment(R.layout.fragment_search_news), OnItemClick{
                 val shouldPaginate = isNotLoadingAndNotLastPage && isAtLastItem && isNotAtFirstItem && isTotalMoreThanVisible
 
                 if (shouldPaginate){
-                    viewModel.getSearchNews(etSearch.text.toString())
-                    isScrolling = false
+                    if (!etSearch.query.isNullOrEmpty()) {
+                        viewModel.getSearchNews(etSearch.query.toString())
+                        isScrolling = false
+                    }
                 }
             }
         }
 
         setupRecyclerView()
 
-        var job : Job? = null
-        etSearch.addTextChangedListener {
-            job?.cancel()
-            job = MainScope().launch {
-                delay(500L)
-                it?.let {
-                    if (it.toString().isNotEmpty()){
-                        viewModel.getSearchNews(it.toString())
-                    }
+        etSearch.setOnQueryTextListener(object : SearchView.OnQueryTextListener{
+
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if (!query.isNullOrEmpty()){
+                    viewModel.getSearchNews(query)
                 }
+                return true
             }
-        }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                return true
+            }
+
+        })
 
         viewModel.searchLiveData.observe(viewLifecycleOwner, {
             when (it) {

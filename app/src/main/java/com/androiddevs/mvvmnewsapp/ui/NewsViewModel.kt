@@ -1,5 +1,11 @@
 package com.androiddevs.mvvmnewsapp.ui
 
+import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+import android.widget.Toast
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,7 +16,8 @@ import com.androiddevs.mvvmnewsapp.utils.Resource
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
-class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
+
+class NewsViewModel(private val application: Application, private val newsRepository: NewsRepository): ViewModel() {
 
     val breakingNewsLiveData: MutableLiveData<Resource<NewsResponse>> = MutableLiveData()
 
@@ -27,9 +34,13 @@ class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
     }
 
     fun getBreakingNews(country: String) = viewModelScope.launch {
-        breakingNewsLiveData.postValue(Resource.Loading())
-        val response = newsRepository.getBreakingNews(country, breakingNewsPage)
-        breakingNewsLiveData.postValue(handleBreakingNewsResponse(response))
+        if (isNetworkAvailable(application)) {
+            breakingNewsLiveData.postValue(Resource.Loading())
+            val response = newsRepository.getBreakingNews(country, breakingNewsPage)
+            breakingNewsLiveData.postValue(handleBreakingNewsResponse(response))
+        }else{
+            Toast.makeText(application, "No Internet Connection", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handleBreakingNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse>{
@@ -49,10 +60,14 @@ class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
         return Resource.Error(response.body(), response.message())
     }
 
-    fun getSearchNews(country: String) = viewModelScope.launch {
-        searchLiveData.postValue(Resource.Loading())
-        val response = newsRepository.getSearchNews(country, searchPage)
-        searchLiveData.postValue(handleSearchNewsResponse(response))
+    fun getSearchNews(query: String) = viewModelScope.launch {
+        if (isNetworkAvailable(application)) {
+            searchLiveData.postValue(Resource.Loading())
+            val response = newsRepository.getSearchNews(query, searchPage)
+            searchLiveData.postValue(handleSearchNewsResponse(response))
+        }else{
+            Toast.makeText(application, "No Internet Connection", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun handleSearchNewsResponse(response: Response<NewsResponse>): Resource<NewsResponse>{
@@ -80,5 +95,22 @@ class NewsViewModel(val newsRepository: NewsRepository): ViewModel() {
 
     fun deleteArticle(article: Article) = viewModelScope.launch {
         newsRepository.deleteArticle(article)
+    }
+
+    private fun isNetworkAvailable(application: Application): Boolean {
+        val connectivityManager =
+            application.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val nw = connectivityManager.activeNetwork ?: return false
+            val actNw = connectivityManager.getNetworkCapabilities(nw)
+            actNw != null && (actNw.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || actNw.hasTransport(
+                NetworkCapabilities.TRANSPORT_CELLULAR
+            ) || actNw.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) || actNw.hasTransport(
+                NetworkCapabilities.TRANSPORT_BLUETOOTH
+            ))
+        } else {
+            val nwInfo = connectivityManager.activeNetworkInfo
+            nwInfo != null && nwInfo.isConnected
+        }
     }
 }
